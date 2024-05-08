@@ -41,59 +41,65 @@ class Dataset:
 
         return self.X_train, self.X_test, self.y_train, self.y_test
 
-    def extend_data_with_n_steps(self, df, n_steps):
+    def extend_data_with_1_step(self, df):
         """Extend given data with n steps using predictions as data for lag prices"""
+        date = f"{df['year'].iloc[-1]}-{df['month'].iloc[-1]}-{df['day'].iloc[-1]}"
+        new_date = pd.to_datetime(date, format="%Y-%m-%d") + timedelta(1)
+        new_day = new_date.day
+        new_month = new_date.month
+        new_year = new_date.year
 
-        df["date"] = pd.to_datetime(dict(year=df.year, month=df.month, day=df.day))
-        for i in range(n_steps):
-            new_date = df["date"].iloc[-1] + timedelta(1)
-            new_day = new_date.day
-            new_month = new_date.month
-            new_year = new_date.year
+        lags = [1, 2, 3, 10, 50, 100, 200]
+        vals = []
 
-            new_price_shifted_1 = df.iloc[-1].price_shifted_1
-            new_price_shifted_2 = df.iloc[-2].price_shifted_2
-            new_price_shifted_3 = df.iloc[-3].price_shifted_3
-            new_price_shifted_10 = df.iloc[-10].price_shifted_10
-            new_price_shifted_50 = df.iloc[-50].price_shifted_50
-            new_price_shifted_100 = df.iloc[-100].price_shifted_100
-            new_price_shifted_200 = df.iloc[-200].price_shifted_200
+        for lag in lags:
+            try:
+                val = df.iloc[-lag].price
+                vals.append(val)
+            except IndexError:
+                vals.append(-1)
 
-            new_cycle_year_0 = 1 if (new_year - 2014) % 4 == 0 else 0
-            new_cycle_year_1 = 1 if (new_year - 2014) % 4 == 1 else 0
-            new_cycle_year_2 = 1 if (new_year - 2014) % 4 == 2 else 0
-            new_cycle_year_3 = 1 if (new_year - 2014) % 4 == 3 else 0
+        new_cycle_year_0 = 1 if (new_year - 2014) % 4 == 0 else 0
+        new_cycle_year_1 = 1 if (new_year - 2014) % 4 == 1 else 0
+        new_cycle_year_2 = 1 if (new_year - 2014) % 4 == 2 else 0
+        new_cycle_year_3 = 1 if (new_year - 2014) % 4 == 3 else 0
 
-            new_last_halving = df["last_halving"].iloc[-1] + 1
-            new_next_halving = df["next_halving"].iloc[-1] + 1
+        new_last_halving = df["last_halving"].iloc[-1] + 1
+        new_next_halving = df["next_halving"].iloc[-1] + 1
 
-            if new_next_halving == 0:
-                new_last_halving = 0
-            if new_next_halving == 1:
-                new_next_halving = -365 * 4
+        if new_next_halving == 0:
+            new_last_halving = 0
+        if new_next_halving == 1:
+            new_next_halving = -365 * 4
 
-            new_row = {
-                "year": new_year,
-                "month": new_month,
-                "day": new_day,
+        new_row = {
+            "year": new_year,
+            "month": new_month,
+            "day": new_day,
+            "cycle_year_0": new_cycle_year_0,
+            "cycle_year_1": new_cycle_year_1,
+            "cycle_year_2": new_cycle_year_2,
+            "cycle_year_3": new_cycle_year_3,
 
-                "price_shifted_1": new_price_shifted_1,
-                "price_shifted_2": new_price_shifted_2,
-                "price_shifted_3": new_price_shifted_3,
-                "price_shifted_10": new_price_shifted_10,
-                "price_shifted_50": new_price_shifted_50,
-                "price_shifted_100": new_price_shifted_100,
-                "price_shifted_200": new_price_shifted_200,
+            "last_halving": new_last_halving,
+            "next_halving": new_next_halving,
 
-                "cycle_year_0": new_cycle_year_0,
-                "cycle_year_1": new_cycle_year_1,
-                "cycle_year_2": new_cycle_year_2,
-                "cycle_year_3": new_cycle_year_3,
+            "price": -1
+        }
 
-                "last_halving": new_last_halving,
-                "next_halving": new_next_halving
-            }
+        for i, lag in enumerate(lags):
+            new_row[f"price_shifted_{lag}"] = vals[i]
 
-            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
-        return df.drop("date", axis=1)
+        return df
+
+
+if __name__ == "__main__":
+    dataset = Dataset("data/clean_historic_with_features/BTCUSDT-1d.csv", 0.8)
+    dataset.prepare_data_xgboost(dataset.df)
+    df_subset = dataset.df.iloc[:2]
+
+    df_result = dataset.extend_data_with_1_step(df_subset)
+    df_result.to_csv("test.csv", index=False)
+

@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 
 
 class XgbRegressor(Models):
-    def __init__(self, path_df, train_test_ratio, window_size):
+    def __init__(self, path_df, train_test_ratio, window_size=1):
         super().__init__()
 
         self.dataset = Dataset(path_df, train_test_ratio)
@@ -57,12 +57,17 @@ class XgbRegressor(Models):
         self.model.fit(self.X, self.y, epochs=1, batch_size=1, verbose=1)
     '''
 
-    def predict(self, data, n_steps):
-        data_to_predict = self.dataset.extend_data_with_n_steps(data, n_steps)
+    def predict(self, df, n_steps):
+        for _ in range(n_steps):
+            # print(df.dtypes)
+            df = self.dataset.extend_data_with_1_step(df)
+            # print(df.dtypes)
+            X_for_prediction = pd.DataFrame(df[self.features].iloc[-1]).transpose()
+            prediction = int(self.model.predict(X_for_prediction)[0])
+            df.loc[len(df)-1, "price"] = prediction
 
-        predictions = self.model.predict(data_to_predict)
-
-        return np.array(predictions)
+        df.to_csv("test.csv", index=False)
+        return df["price"]
 
     def save_model(self):
         path_to_file = os.path.join("/".join(os.path.abspath(__file__).split("/")[:-1]), "lstm.keras")
