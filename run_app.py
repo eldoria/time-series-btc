@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 import numpy as np
 import time
@@ -7,7 +8,14 @@ from main import y_train, y_test, y_predicted
 
 progress_bar = st.sidebar.progress(0)
 status_text = st.sidebar.empty()
-chart = st.line_chart([[val, val] for val in y_train.values], y=["observed", "predicted"])
+
+df = pd.DataFrame()
+df["predicted"] = y_train
+df["observed"] = y_train
+
+
+chart = st.line_chart(df, y=["predicted", "observed"])
+# chart = st.line_chart([[val, val] for val in y_train.values])#, y=["observed", "predicted"])
 
 
 for i in range(len(y_test)):
@@ -17,7 +25,13 @@ for i in range(len(y_test)):
     predicted = int(y_predicted.iloc[i])
 
     status_text.text("%i%% Complete" % (percentage_completion*100))
-    chart.add_rows(np.column_stack((predicted, observed)))
+    # chart.add_rows(np.column_stack((predicted, observed)))
+
+    new_row = pd.DataFrame()
+    new_row["predicted"] = pd.Series(predicted)
+    new_row["observed"] = pd.Series(observed)
+
+    chart.add_rows(new_row)
     progress_bar.progress(percentage_completion)
 
     time.sleep(0.01)
