@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 # with windows size of 100 il will the 501 last prices values
-def add_lag(df: pd.DataFrame, lags=[1, 101, 201, 301, 401]) -> pd.DataFrame:
+def add_lag(df: pd.DataFrame, lags=[1, 2, 3, 10, 50, 100, 200]) -> pd.DataFrame:
     for lag in lags:
         df[f"price_shifted_{lag}"] = df["price"].shift(periods=lag, fill_value=-1)
     return df
@@ -24,9 +24,9 @@ def add_halving_dates(df: pd.DataFrame):
     df["date"] = df.apply(lambda x: f"{int(x['year'])}-{int(x['month'])}-{int(x['day'])}", axis=1)
     df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
     df["last_halving"] = df["date"].apply(
-        lambda x: min([(x - halving_date).days for halving_date in halving_dates if (x - halving_date).days > 0]))
+        lambda x: min([(x - halving_date).days for halving_date in halving_dates if (x - halving_date).days >= 0]))
     df["next_halving"] = df["date"].apply(
-        lambda x: max([(x - halving_date).days for halving_date in halving_dates if (x - halving_date).days < 0]))
+        lambda x: max([(x - halving_date).days for halving_date in halving_dates if (x - halving_date).days <= 0]))
     return df.drop("date", axis=1)
 
 
