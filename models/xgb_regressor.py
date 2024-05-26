@@ -3,26 +3,26 @@ from dataset import Dataset
 
 import os
 import pandas as pd
-import numpy as np
 import xgboost as xgb
-
-from sklearn.model_selection import train_test_split
 
 
 class XgbRegressor(Models):
-    def __init__(self, path_df, train_test_ratio, window_size=1):
+    def __init__(self, path_df="data/clean_historic_with_features/BTCUSDT-1d.csv", train_test_ratio=0.8, window_size=1):
         super().__init__()
 
-        self.dataset = Dataset(path_df, train_test_ratio)
+        path_df = os.path.join("/".join(os.path.abspath(__file__).split("/")[:-2]), path_df)
+
+        self.online_data = pd.DataFrame()  # for real time prediction
+        self.dataset = Dataset(path_df, train_test_ratio)  # for batch prediction
         self.X_train, self.X_test, self.y_train, self.y_test = self.dataset.prepare_data_xgboost(window_size)
 
+        self.columns = self.dataset.columns
         self.features = self.dataset.features
 
         self.window_size = window_size
-        self.online_data = pd.DataFrame()
 
         self.model = xgb.XGBRegressor(
-            objective='reg:linear',
+            objective='reg:squarederror',
             booster='gbtree',
             learning_rate=0.1,
             n_estimators=100,
@@ -33,29 +33,22 @@ class XgbRegressor(Models):
         self.model.fit(self.X_train, self.y_train,
                        eval_set=[(self.X_train, self.y_train), (self.X_test, self.y_test)], early_stopping_rounds=20)
 
-    '''
     def online_learning(self, online_data):
         index = online_data["index"]
-        print(index)
-        if index == 0:
+
+        if index == 0:  # header
             return
 
         brute_data = [int(data) for data in online_data["data"].split(',')]
 
-        data = pd.DataFrame(columns=self.features+["price"])
+        data = pd.DataFrame(columns=self.columns)
+
         data.loc[len(data)] = brute_data
         self.online_data = pd.concat([self.online_data, data])
 
-        if index <= self.window_size+1:
-            return
-        else:
-            self.online_data = self.online_data.iloc[1:, :]
+        X, y = data[self.features], data["price"]
 
-        self.create_x_y(self.online_data)
-
-        self.model.compile(optimizer='adam', loss='mean_squared_error')
-        self.model.fit(self.X, self.y, epochs=1, batch_size=1, verbose=1)
-    '''
+        self.model.fit(X, y, verbose=1)
 
     def predict(self, df, n_steps):
         for _ in range(n_steps):
@@ -67,7 +60,7 @@ class XgbRegressor(Models):
             df.loc[len(df)-1, "price"] = prediction
 
         df.to_csv("test.csv", index=False)
-        return df["price"]
+        return df["price"].iloc[len(df)-n_steps:]
 
     def save_model(self):
         path_to_file = os.path.join("/".join(os.path.abspath(__file__).split("/")[:-1]), "lstm.keras")

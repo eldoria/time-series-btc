@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 class Dataset:
     def __init__(self, path_df, train_test_ratio):
         self.df = pd.read_csv(path_df)
+        self.columns = self.df.columns
         self.features = self.df.drop("price", axis=1).columns
 
         self.train_test_ratio = train_test_ratio

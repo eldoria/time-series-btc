@@ -5,7 +5,7 @@ class Models:
         """
         pass
 
-    def online_learning(self):
+    def online_learning(self, online_data):
         """
         Perform online learning with the model.
         The model learns with new examples one at a time

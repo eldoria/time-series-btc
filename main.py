@@ -9,11 +9,14 @@ xgb_regressor = XgbRegressor(
     train_test_ratio=0.8,
     window_size=10
 )
+'''
 xgb_regressor.train(
     nb_epochs=300,
     nb_batch_size=128
 )
 xgb_regressor.save_model()
+'''
+xgb_regressor.load_model()
 
 y_train = pd.Series(xgb_regressor.y_train)
 y_test = pd.Series(xgb_regressor.y_test)
@@ -21,7 +24,7 @@ y_test = pd.Series(xgb_regressor.y_test)
 df_train = xgb_regressor.X_train
 df_train["price"] = y_train
 
-y_predicted = xgb_regressor.predict(df_train, len(xgb_regressor.X_test))[len(xgb_regressor.X_train):]
+y_predicted = xgb_regressor.predict(df_train, len(xgb_regressor.X_test))
 y_predicted = pd.Series(y_predicted)
 
 '''
