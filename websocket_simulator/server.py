@@ -16,7 +16,7 @@ async def send_data(websocket, file='/data/clean_historic_with_features/BTCUSDT-
         # Close the WebSocket connection after sending all data
         await websocket.close()
 
-start_server = websockets.serve(send_data, "localhost", 8765)
+start_server = websockets.serve(send_data, "localhost", 8765, ping_timeout=60, ping_interval=10)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

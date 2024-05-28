@@ -32,7 +32,7 @@ class Dataset:
 
         return self.X_train, self.X_test, self.y_train, self.y_test
 
-    def prepare_data_xgboost(self, window_size):
+    def prepare_data_xgboost(self):
         X = self.df.drop("price", axis=1)
         y = self.df["price"]
 
