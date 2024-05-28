@@ -11,6 +11,19 @@ DATAS_FILE_PATH = f"{folder}/datas.csv"
 PREDICTIONS_FILE_PATH = f"{folder}/predictions.csv"
 
 
+speed_selector = st.select_slider("speed", options=["very slow", "slow", "medium", "fast", "very fast"])
+if speed_selector == "very slow":
+    sleep_time = 1
+elif speed_selector == "slow":
+    sleep_time = 0.5
+if speed_selector == "medium":
+    sleep_time = 0.3
+if speed_selector == "fast":
+    sleep_time = 0.1
+if speed_selector == "very fast":
+    sleep_time = 0.01
+
+
 def get_data():
     counter = st.session_state["counter"]
     df1, df2 = data["price"].head(counter+1), predictions.iloc[counter].T.reset_index(drop=True).rename("price")
@@ -41,5 +54,5 @@ if __name__ == "__main__":
             pass
     except pd.errors.EmptyDataError:
         pass
-    time.sleep(0.5)
+    time.sleep(sleep_time)
     st.rerun()
