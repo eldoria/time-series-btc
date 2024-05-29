@@ -70,7 +70,6 @@ class XgbRegressor(Models):
             prediction = int(self.model.predict(X_for_prediction)[0])
             df.loc[len(df)-1, "price"] = prediction
 
-        df.to_csv("test.csv", index=False)
         return df["price"].iloc[len(df)-n_steps:]
 
     def save_model(self):
